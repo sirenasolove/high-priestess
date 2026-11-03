@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>card of the day</title>
+<style>
+  :root {
+    --cream: #fbf6ee;
+    --ink: #3b3230;
+    --soft: #8a7d76;
+    --line: #eadfd2;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: transparent; }
+  body {
+    font-family: Georgia, "Times New Roman", serif;
+    color: var(--ink);
+    padding: 8px;
+  }
+  .card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    max-width: 460px;
+    background: var(--cream);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 16px 12px 12px;
+  }
+  .art {
+    flex: 0 0 auto;
+    width: 74px;
+    height: auto;
+    border-radius: 4px;
+    box-shadow: 0 1px 4px rgba(59, 50, 48, 0.18);
+  }
+  .text { min-width: 0; }
+  .label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--soft);
+  }
+  .date {
+    font-size: 11px;
+    color: var(--soft);
+    margin-top: 2px;
+  }
+  .name {
+    font-size: 20px;
+    margin-top: 10px;
+    line-height: 1.2;
+  }
+  .idea {
+    font-size: 13px;
+    color: var(--soft);
+    margin-top: 6px;
+    line-height: 1.4;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <img class="art" id="art" alt="">
+    <div class="text">
+      <div class="label">card of the day</div>
+      <div class="date" id="date"></div>
+      <div class="name" id="name"></div>
+      <div class="idea" id="idea"></div>
+    </div>
+  </div>
+
+<script>
+  // your 78 cards, in deck order. images/00.jpg is the fool, images/77.jpg is the king of pentacles.
+  var cards = [
+    ["the fool", "new journey, infinite potential, innocence"],
+    ["the magician", "materialization, constructive action, creative willpower"],
+    ["the high priestess", "intuition, inner knowing, mystery, the subconscious, stillness"],
+    ["the empress", "abundance, nurturing, fertility, sensuality, creativity"],
+    ["the emperor", "authority, structure, stability, leadership, protection"],
+    ["the hierophant", "tradition, spiritual guidance, institutions, shared beliefs, teaching"],
+    ["the lovers", "love, union, alignment, values, meaningful choice"],
+    ["the chariot", "willpower, determination, victory, direction, self-control"],
+    ["strength", "inner strength, courage, compassion, patience, gentle control"],
+    ["the hermit", "introspection, solitude, inner guidance, wisdom, soul-searching"],
+    ["wheel of fortune", "cycles, fate, turning points, change, luck"],
+    ["justice", "fairness, truth, cause and effect, accountability, balance"],
+    ["the hanged man", "surrender, pause, new perspective, letting go, waiting"],
+    ["death", "endings, transformation, transition, release, making space"],
+    ["temperance", "balance, moderation, patience, blending, healing"],
+    ["the devil", "attachment, temptation, shadow self, bondage, materialism"],
+    ["the tower", "sudden upheaval, collapse, freed energy"],
+    ["the star", "hope, renewal, faith, healing, inspiration"],
+    ["the moon", "illusion, intuition, uncertainty, dreams, the unconscious"],
+    ["the sun", "joy, success, vitality, warmth, clarity"],
+    ["judgement", "awakening, reckoning, calling, renewal, absolution"],
+    ["the world", "completion, wholeness, achievement, integration, travel"],
+    ["ace of cups", "new love, emotional opening, compassion, intuition, overflowing feeling"],
+    ["2 of cups", "partnership, mutual attraction, connection, harmony, unity"],
+    ["3 of cups", "friendship, celebration, community, joy, gathering"],
+    ["4 of cups", "apathy, contemplation, discontent, missed offers, withdrawal"],
+    ["5 of cups", "grief, loss, regret, disappointment, focusing on what's gone"],
+    ["6 of cups", "nostalgia, childhood, innocence, kindness, reunion"],
+    ["7 of cups", "choices, fantasy, illusion, wishful thinking, too many options"],
+    ["8 of cups", "walking away, disillusionment, seeking deeper meaning, leaving behind, withdrawal"],
+    ["9 of cups", "contentment, wishes fulfilled, satisfaction, gratitude, pleasure"],
+    ["10 of cups", "family harmony, emotional fulfillment, happiness, home, lasting love"],
+    ["page of cups", "creative spark, intuitive message, curiosity, sensitivity, playfulness"],
+    ["knight of cups", "romance, charm, following the heart, idealism, invitations"],
+    ["queen of cups", "compassion, emotional security, intuition, care, calm"],
+    ["king of cups", "emotional balance, diplomacy, wisdom, generosity, calm control"],
+    ["ace of wands", "inspiration, new venture, creative spark, potential, passion"],
+    ["2 of wands", "planning, future vision, decisions"],
+    ["3 of wands", "expansion, foresight, progress, opportunity, looking ahead"],
+    ["4 of wands", "celebration, homecoming, stability, harmony, milestones"],
+    ["5 of wands", "conflict, competition, disagreement, tension, rivalry"],
+    ["6 of wands", "victory, recognition, success, confidence, public praise"],
+    ["7 of wands", "standing your ground, defense, perseverance, challenge, conviction"],
+    ["8 of wands", "speed, swift action, movement, momentum, news arriving"],
+    ["9 of wands", "resilience, persistence, boundaries, last stand, courage"],
+    ["10 of wands", "burden, overwork, responsibility, stress, carrying too much"],
+    ["page of wands", "enthusiasm, exploration, free spirit, discovery, new ideas"],
+    ["knight of wands", "energy, adventure, passion, impulsiveness, bold action"],
+    ["queen of wands", "confidence, warmth, determination, charisma, independence"],
+    ["king of wands", "vision, leadership, boldness, entrepreneurship, inspiration"],
+    ["ace of swords", "clarity, breakthrough, truth, new idea, mental focus"],
+    ["2 of swords", "stalemate, difficult decision, avoidance, blocked emotions, indecision"],
+    ["3 of swords", "heartbreak, grief, painful truth, sorrow, emotional pain"],
+    ["4 of swords", "rest, recovery, contemplation, retreat, restoration"],
+    ["5 of swords", "conflict, defeat, winning at all costs, betrayal, hostility"],
+    ["6 of swords", "transition, moving on, leaving behind, healing journey, calmer waters"],
+    ["7 of swords", "deception, strategy, secrecy, getting away with something, cunning"],
+    ["8 of swords", "restriction, feeling trapped, self-limiting beliefs, victim mindset, helplessness"],
+    ["9 of swords", "anxiety, worry, nightmares, fear, mental anguish"],
+    ["10 of swords", "painful ending, rock bottom, betrayal, collapse, can't get worse"],
+    ["page of swords", "curiosity, new ideas, vigilance, truth-seeking, communication"],
+    ["knight of swords", "ambition, fast action, assertiveness, drive, direct communication"],
+    ["queen of swords", "clear thinking, independence, honesty, boundaries, perceptiveness"],
+    ["king of swords", "intellect, authority, truth, clear judgment, ethics"],
+    ["ace of pentacles", "new opportunity, prosperity, manifestation, abundance, solid start"],
+    ["2 of pentacles", "balance, adaptability, juggling priorities, flexibility, time management"],
+    ["3 of pentacles", "teamwork, skill, collaboration, learning, craftsmanship"],
+    ["4 of pentacles", "security, saving, control, holding on, stability"],
+    ["5 of pentacles", "hardship, loss, isolation, poverty, feeling left out"],
+    ["6 of pentacles", "generosity, giving and receiving, charity, fairness, support"],
+    ["7 of pentacles", "patience, long-term view, investment, assessment, perseverance"],
+    ["8 of pentacles", "diligence, mastery, skill building, dedication, hard work"],
+    ["9 of pentacles", "independence, luxury, self-sufficiency, reward, refinement"],
+    ["10 of pentacles", "legacy, wealth, family, long-term success, inheritance"],
+    ["page of pentacles", "ambition, study, new skill, opportunity, diligence"],
+    ["knight of pentacles", "routine, reliability, hard work, patience, steady progress"],
+    ["queen of pentacles", "nurturing, practicality, abundance, groundedness, care"],
+    ["king of pentacles", "wealth, security, leadership, discipline, abundance"]
+  ];
+
+  var imageType = ".jpg";
+  var months = ["january", "february", "march", "april", "may", "june",
+                "july", "august", "september", "october", "november", "december"];
+
+  function showToday() {
+    var now = new Date();
+    // count whole days in the viewer's own time zone, so the card flips at their midnight
+    var dayNumber = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000);
+    // stepping by 31 walks through all 78 cards before any card repeats
+    var index = (dayNumber * 31) % 78;
+    var card = cards[index];
+    var num = (index < 10 ? "0" : "") + index;
+
+    var art = document.getElementById("art");
+    art.style.display = "";
+    art.onerror = function () { art.style.display = "none"; };
+    art.src = "images/" + num + imageType;
+    art.alt = card[0];
+
+    document.getElementById("date").textContent = months[now.getMonth()] + " " + now.getDate();
+    document.getElementById("name").textContent = card[0];
+    document.getElementById("idea").textContent = card[1];
+
+    // if the page stays open past midnight, switch to the new card
+    var midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5);
+    setTimeout(showToday, midnight - now);
+  }
+
+  showToday();
+</script>
+</body>
+</html>
