@@ -3,13 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>card of the day</title>
 <style>
+  /* light mode colors */
   :root {
+    color-scheme: light dark;
     --lavender: #ece6f4;
     --ink: #3b3230;
     --soft: #8a7d76;
     --line: #d9cde8;
+  }
+  /* dark mode colors */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --lavender: #2e2838;
+      --ink: #ece6f4;
+      --soft: #b3a8c2;
+      --line: #463d55;
+    }
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { background: transparent; }
@@ -23,7 +35,7 @@
     align-items: center;
     gap: 16px;
     max-width: 460px;
-    background: var(--cream);
+    background: var(--lavender);
     border: 1px solid var(--line);
     border-radius: 14px;
     padding: 12px 16px 12px 12px;
