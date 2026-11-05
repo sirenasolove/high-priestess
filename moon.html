@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>moon today</title>
+<style>
+  /* light mode colors */
+  :root {
+    color-scheme: light dark;
+    --lavender: #ece6f4;
+    --ink: #3b3230;
+    --soft: #8a7d76;
+    --line: #d9cde8;
+    --field: #f7f3fb;
+  }
+  /* dark mode colors */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --lavender: #2e2838;
+      --ink: #ece6f4;
+      --soft: #b3a8c2;
+      --line: #463d55;
+      --field: #3a3346;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: transparent; }
+  body {
+    font-family: Georgia, "Times New Roman", serif;
+    color: var(--ink);
+    padding: 8px;
+  }
+  .card {
+    max-width: 460px;
+    background: var(--lavender);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 16px 14px 12px;
+  }
+  .top {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .moon-art {
+    flex: 0 0 auto;
+    width: 84px;
+    height: 84px;
+  }
+  .text { min-width: 0; }
+  .label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--soft);
+  }
+  .date {
+    font-size: 11px;
+    color: var(--soft);
+    margin-top: 2px;
+  }
+  .phase {
+    font-size: 20px;
+    margin-top: 8px;
+    line-height: 1.2;
+  }
+  .where {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    font-size: 14px;
+    margin-top: 6px;
+  }
+  .sign-icon {
+    width: 20px;
+    height: 20px;
+  }
+  .sign-glyph { font-size: 16px; }
+  .house { color: var(--soft); }
+  .meaning {
+    font-size: 13px;
+    color: var(--soft);
+    margin-top: 10px;
+    line-height: 1.4;
+  }
+  .rising {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+    font-size: 12px;
+    color: var(--soft);
+    line-height: 1.4;
+  }
+  .rising-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  select, button {
+    font-family: inherit;
+    font-size: 12px;
+    color: var(--ink);
+  }
+  select {
+    background: var(--field);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 4px 8px;
+  }
+  button {
+    background: none;
+    border: none;
+    color: var(--soft);
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+  }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="top">
+      <img class="moon-art" id="moonArt" alt="">
+      <div class="text">
+        <div class="label">moon today</div>
+        <div class="date" id="date"></div>
+        <div class="phase" id="phase"></div>
+        <div class="where">
+          <span id="signIconWrap"></span>
+          <span id="sign"></span>
+          <span class="house" id="house"></span>
+          <button id="changeRising" class="hidden">change</button>
+        </div>
+      </div>
+    </div>
+    <div class="meaning" id="meaning"></div>
+
+    <!-- shown until someone picks a rising sign or skips -->
+    <div class="rising hidden" id="risingAsk">
+      add your rising sign to see which of your houses the moon is in.
+      <div class="rising-row">
+        <select id="risingSelect" aria-label="your rising sign">
+          <option value="">pick your rising sign</option>
+        </select>
+        <button id="skip">skip, i'll leave this out</button>
+      </div>
+      <div style="margin-top: 6px;">don't know your rising? that's okay. you can skip this, and the moon's phase and sign still show every day.</div>
+    </div>
+
+    <!-- shown after someone skips -->
+    <div class="rising hidden" id="risingSkipped">
+      <button id="addRising">add my rising sign</button>
+    </div>
+  </div>
+
+<script>
+  var signs = ["aries", "taurus", "gemini", "cancer", "leo", "virgo",
+               "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces"];
+  var glyphs = ["♈", "♉", "♊", "♋", "♌", "♍",
+                "♎", "♏", "♐", "♑", "♒", "♓"];
+
+  // file names in the moon folder, and a short line on what each phase is good for
+  var phases = {
+    "new-moon":        ["new moon",        "a fresh start. good for setting intentions and asking what wants to begin."],
+    "waxing-crescent": ["waxing crescent", "early growth. good for small first steps and building momentum."],
+    "first-quarter":   ["first quarter",   "a push point. good for readings about decisions and obstacles."],
+    "waxing-gibbous":  ["waxing gibbous",  "almost there. good for refining, adjusting and staying patient."],
+    "full-moon":       ["full moon",       "everything lit up. good for clarity, release and seeing what's ready."],
+    "waning-gibbous":  ["waning gibbous",  "the harvest. good for gratitude and sharing what you've learned."],
+    "last-quarter":    ["last quarter",    "letting go. good for readings about what to clear away."],
+    "waning-crescent": ["waning crescent", "rest and reset. good for quiet reflection before the next cycle."]
+  };
+
+  var months = ["january", "february", "march", "april", "may", "june",
+                "july", "august", "september", "october", "november", "december"];
+
+  // ---------- the astronomy ----------
+  // simplified formulas from jean meeus, "astronomical algorithms".
+  // good to well under a degree, which is plenty for phase and sign.
+
+  function rad(x) { return x * Math.PI / 180; }
+  function norm(x) { x = x % 360; return x < 0 ? x + 360 : x; }
+
+  function daysSinceJ2000(date) {
+    return date.getTime() / 86400000 + 2440587.5 - 2451545.0;
+  }
+
+  function sunLongitude(d) {
+    var T = d / 36525;
+    var L0 = 280.46646 + 36000.76983 * T;
+    var M = rad(357.52911 + 35999.05029 * T);
+    var C = (1.914602 - 0.004817 * T) * Math.sin(M) + 0.019993 * Math.sin(2 * M) + 0.000289 * Math.sin(3 * M);
+    return norm(L0 + C - 0.00569);
+  }
+
+  function moonLongitude(d) {
+    var T = d / 36525;
+    var Lp = 218.3164477 + 481267.88123421 * T;
+    var D = rad(297.8501921 + 445267.1114034 * T);
+    var M = rad(357.5291092 + 35999.0502909 * T);
+    var Mp = rad(134.9633964 + 477198.8675055 * T);
+    var F = rad(93.2720950 + 483202.0175233 * T);
+    var s = Math.sin;
+    var lon = Lp
+      + 6.288774 * s(Mp)
+      + 1.274027 * s(2 * D - Mp)
+      + 0.658314 * s(2 * D)
+      + 0.213618 * s(2 * Mp)
+      - 0.185116 * s(M)
+      - 0.114332 * s(2 * F)
+      + 0.058793 * s(2 * D - 2 * Mp)
+      + 0.057066 * s(2 * D - M - Mp)
+      + 0.053322 * s(2 * D + Mp)
+      + 0.045758 * s(2 * D - M)
+      - 0.040923 * s(M - Mp)
+      - 0.034720 * s(D)
+      - 0.030383 * s(M + Mp)
+      + 0.015327 * s(2 * D - 2 * F)
+      - 0.012528 * s(Mp + 2 * F)
+      + 0.010980 * s(Mp - 2 * F)
+      + 0.010675 * s(4 * D - Mp)
+      + 0.010034 * s(3 * Mp)
+      + 0.008548 * s(4 * D - 2 * Mp)
+      - 0.007888 * s(2 * D + M - Mp)
+      - 0.006766 * s(2 * D + M)
+      - 0.005163 * s(D - Mp)
+      + 0.004987 * s(D + M)
+      + 0.004036 * s(2 * D - M + Mp);
+    return norm(lon);
+  }
+
+  // how far the moon is ahead of the sun, 0 to 360
+  function elongation(date) {
+    var d = daysSinceJ2000(date);
+    return norm(moonLongitude(d) - sunLongitude(d));
+  }
+
+  // the phase for a whole day. new, first quarter, full and last quarter
+  // only show on the day they actually happen; the in-between phases fill the rest.
+  function phaseForDay(now) {
+    var start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    var end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+    var a = elongation(start);
+    var b = elongation(end);
+    if (b < a) b += 360;
+    var exact = [[0, "new-moon"], [90, "first-quarter"], [180, "full-moon"], [270, "last-quarter"], [360, "new-moon"]];
+    for (var i = 0; i < exact.length; i++) {
+      if (exact[i][0] >= a && exact[i][0] < b) return exact[i][1];
+    }
+    var e = norm(a);
+    if (e < 90) return "waxing-crescent";
+    if (e < 180) return "waxing-gibbous";
+    if (e < 270) return "waning-gibbous";
+    return "waning-crescent";
+  }
+
+  // ---------- remembering the rising sign on this device ----------
+  var KEY = "high-priestess-rising";
+  function loadRising() {
+    try { return localStorage.getItem(KEY) || ""; } catch (e) { return memory; }
+  }
+  function saveRising(value) {
+    memory = value;
+    try {
+      if (value) localStorage.setItem(KEY, value); else localStorage.removeItem(KEY);
+    } catch (e) {}
+  }
+  var memory = "";
+
+  function ordinal(n) {
+    if (n === 1) return "1st";
+    if (n === 2) return "2nd";
+    if (n === 3) return "3rd";
+    return n + "th";
+  }
+
+  // ---------- drawing it ----------
+  var select = document.getElementById("risingSelect");
+  for (var i = 0; i < signs.length; i++) {
+    var opt = document.createElement("option");
+    opt.value = signs[i];
+    opt.textContent = signs[i];
+    select.appendChild(opt);
+  }
+
+  function show() {
+    var now = new Date();
+    var key = phaseForDay(now);
+    var signIndex = Math.floor(moonLongitude(daysSinceJ2000(now)) / 30);
+    var sign = signs[signIndex];
+
+    document.getElementById("date").textContent = months[now.getMonth()] + " " + now.getDate();
+
+    var art = document.getElementById("moonArt");
+    art.src = "moon/" + key + ".png";
+    art.alt = phases[key][0];
+    document.getElementById("phase").textContent = phases[key][0];
+    document.getElementById("meaning").textContent = phases[key][1];
+
+    // sign icon, with the plain symbol as a backup if the image can't load
+    var wrap = document.getElementById("signIconWrap");
+    wrap.innerHTML = "";
+    var icon = document.createElement("img");
+    icon.className = "sign-icon";
+    icon.alt = "";
+    icon.onerror = function () {
+      wrap.innerHTML = "";
+      var g = document.createElement("span");
+      g.className = "sign-glyph";
+      g.textContent = glyphs[signIndex] + "︎";
+      wrap.appendChild(g);
+    };
+    icon.src = "zodiac/" + sign + ".png";
+    wrap.appendChild(icon);
+    document.getElementById("sign").textContent = "in " + sign;
+
+    // house, from whole sign houses: rising sign is the 1st house
+    var rising = loadRising();
+    var house = document.getElementById("house");
+    var change = document.getElementById("changeRising");
+    var ask = document.getElementById("risingAsk");
+    var skipped = document.getElementById("risingSkipped");
+
+    if (rising && rising !== "skip" && signs.indexOf(rising) !== -1) {
+      var n = (signIndex - signs.indexOf(rising) + 12) % 12 + 1;
+      house.textContent = "your " + ordinal(n) + " house";
+      change.classList.remove("hidden");
+      ask.classList.add("hidden");
+      skipped.classList.add("hidden");
+    } else if (rising === "skip") {
+      house.textContent = "";
+      change.classList.add("hidden");
+      ask.classList.add("hidden");
+      skipped.classList.remove("hidden");
+    } else {
+      house.textContent = "";
+      change.classList.add("hidden");
+      ask.classList.remove("hidden");
+      skipped.classList.add("hidden");
+      select.value = "";
+    }
+  }
+
+  select.onchange = function () { if (select.value) { saveRising(select.value); show(); } };
+  document.getElementById("skip").onclick = function () { saveRising("skip"); show(); };
+  document.getElementById("addRising").onclick = function () { saveRising(""); show(); };
+  document.getElementById("changeRising").onclick = function () { saveRising(""); show(); };
+
+  show();
+  // the moon changes sign every two to three days, so check again every 10 minutes
+  setInterval(show, 10 * 60 * 1000);
+</script>
+</body>
+</html>
