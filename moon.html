@@ -119,6 +119,26 @@
     cursor: pointer;
     padding: 0;
   }
+  .upcoming {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+  }
+  .next {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .next + .next { margin-top: 6px; }
+  .next img {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+  }
+  .next .when { color: var(--ink); }
+  .next .detail { color: var(--soft); }
   .hidden { display: none; }
 </style>
 </head>
@@ -139,6 +159,9 @@
       </div>
     </div>
     <div class="meaning" id="meaning"></div>
+
+    <!-- the next new moon and full moon, in whichever order they come -->
+    <div class="upcoming" id="upcoming"></div>
 
     <!-- shown until someone picks a rising sign or skips -->
     <div class="rising hidden" id="risingAsk">
@@ -259,6 +282,29 @@
     return "waning-crescent";
   }
 
+  // the exact moment of the next new moon (target 0) or full moon (target 180) after "from"
+  function nextMoment(from, target) {
+    function gap(t) { return norm(elongation(new Date(t)) - target); }
+    var step = 6 * 3600000;
+    var a = from.getTime();
+    var ga = gap(a);
+    for (var i = 0; i < 4 * 32; i++) {
+      var b = a + step;
+      var gb = gap(b);
+      if (gb < ga) {
+        // it happened between a and b, so narrow it down
+        for (var j = 0; j < 30; j++) {
+          var mid = (a + b) / 2;
+          if (gap(mid) < 180) b = mid; else a = mid;
+        }
+        return new Date(b);
+      }
+      a = b;
+      ga = gb;
+    }
+    return null;
+  }
+
   // ---------- remembering the rising sign on this device ----------
   var KEY = "high-priestess-rising";
   function loadRising() {
@@ -321,14 +367,53 @@
 
     // house, from whole sign houses: rising sign is the 1st house
     var rising = loadRising();
+    var hasRising = rising && rising !== "skip" && signs.indexOf(rising) !== -1;
+    function houseOf(index) {
+      return (index - signs.indexOf(rising) + 12) % 12 + 1;
+    }
+
+    // next new moon and full moon
+    var upcoming = document.getElementById("upcoming");
+    upcoming.innerHTML = "";
+    var events = [
+      ["new moon", "new-moon", nextMoment(now, 0)],
+      ["full moon", "full-moon", nextMoment(now, 180)]
+    ].filter(function (ev) { return ev[2]; });
+    events.sort(function (x, y) { return x[2] - y[2]; });
+    events.forEach(function (ev) {
+      var when = ev[2];
+      var evSign = Math.floor(moonLongitude(daysSinceJ2000(when)) / 30);
+      var row = document.createElement("div");
+      row.className = "next";
+      var img = document.createElement("img");
+      img.src = "moon/" + ev[1] + ".png";
+      img.alt = "";
+      var text = document.createElement("span");
+      var a = document.createElement("span");
+      a.className = "when";
+      // count calendar days from today to the day it happens
+      var today0 = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+      var then0 = Date.UTC(when.getFullYear(), when.getMonth(), when.getDate());
+      var days = Math.round((then0 - today0) / 86400000);
+      var away = days === 0 ? "today" : days === 1 ? "tomorrow" : days + " days away";
+      a.textContent = "next " + ev[0] + ": " + months[when.getMonth()] + " " + when.getDate() + " (" + away + ")";
+      var b = document.createElement("span");
+      b.className = "detail";
+      b.textContent = " in " + signs[evSign] + (hasRising ? ", your " + ordinal(houseOf(evSign)) + " house" : "");
+      text.appendChild(a);
+      text.appendChild(b);
+      row.appendChild(img);
+      row.appendChild(text);
+      upcoming.appendChild(row);
+    });
+
     var house = document.getElementById("house");
     var change = document.getElementById("changeRising");
     var ask = document.getElementById("risingAsk");
     var skipped = document.getElementById("risingSkipped");
 
-    if (rising && rising !== "skip" && signs.indexOf(rising) !== -1) {
-      var n = (signIndex - signs.indexOf(rising) + 12) % 12 + 1;
-      house.textContent = "your " + ordinal(n) + " house";
+    if (hasRising) {
+      house.textContent = "your " + ordinal(houseOf(signIndex)) + " house";
       change.classList.remove("hidden");
       ask.classList.add("hidden");
       skipped.classList.add("hidden");
